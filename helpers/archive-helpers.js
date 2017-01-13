@@ -65,6 +65,8 @@ exports.isUrlArchived = function(urlOfInterest, cb) {
       throw err;
     }
     var exists = files.includes(urlOfInterest);
+    console.log(urlOfInterest);
+    console.log(exists);
     cb(err, exists);
   });
 };

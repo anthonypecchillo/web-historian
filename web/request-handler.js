@@ -6,37 +6,95 @@ var httpHelpers = require('./http-helpers.js');
 
 exports.handleRequest = function (req, res) {
   //curr directory is /web
-  console.log('__dirname is: ', __dirname, '\n');
+  var pathToRequest;
 
-  fs.readFile(__dirname + '/public/index.html', function(err, data) {
-    if (err) {
-      console.log(err);
-      throw err;
-    }
-    console.log('I read the file!\n');
-    console.log('The file is: ', '???file???');
-    console.log('The data is: ', data.toString());
+  // pathToRequest =  (req.url === '/') ? 
+  //                  archive.paths.siteAssets + req.url + 'index.html' :
+  //                  archive.paths.archivedSites + req.url;
+  
+  if (req.url === '/') {
+    console.log('ksjdfhkasjdhfka' + req.url);  
+    pathToRequest = archive.paths.siteAssets + req.url + 'index.html';
 
-    fs.writeFile(path.join(path.normalize(__dirname + '/..'), '/test/testdata/sites.txt'), data, function(err) {
-      console.log('I\'m in the writeFile method now!\n');
-      console.log('The data is now: ' + data.toString());
-      console.log('I\'m writing the data into: ' + path.join(path.normalize(__dirname + '/..'), '/test/testdata/sites.txt'));
+    fs.readFile(pathToRequest, function(err, data) {
+      if (err) { throw error; }
+
+      fs.writeFile(path.join(path.normalize(__dirname + '/..'), '/test/testdata/sites.txt'), data, function(err) {
+        if (err) { throw error; }
+
+        var headers = httpHelpers.headers;
+        var method = req.method;
+        var url = req.url;
+
+        console.log('Serving request type ' + method + ' for url ' + url);
+
+        if (method === 'GET') {          
+          req.on('error', function(err) {
+            console.error(err);
+          });
+          req.on('data', function(chunk) {
+            //do stuff
+          });
+          req.on('end', function() {
+            res.writeHead(200, {'Content-Type': 'application/JSON'});
+
+            var responseBody = {
+              headers: headers,
+              method: method,
+              url: url,
+              body: data.toString()
+            };
+            res.end(JSON.stringify({results: responseBody.body}));
+          });
+        }     
+      });
+    });
+  } else {
+
+    archive.isUrlArchived(req.url.substring(1), function(err, exists) {
       if (err) {
-        console.log(err);
-        throw err;
+        throw error;
       }
 
-      var headers = httpHelpers.headers;
-      var method = req.method;
-      var url = req.url;
-      var statusCode;
+      if (exists) {
+        pathToRequest =  archive.paths.archivedSites + req.url;
 
-      console.log('Serving request type ' + method + ' for url ' + url);
+        fs.readFile(pathToRequest, function(err, data) {
+          if (err) { throw error; }
 
-      if (method === 'GET') {
-        console.log('GET METHOD!!!!!!');
-        statusCode = 200;
-        
+          fs.writeFile(path.join(path.normalize(__dirname + '/..'), '/test/testdata/sites.txt'), data, function(err) {
+            if (err) { throw error; }
+
+            var headers = httpHelpers.headers;
+            var method = req.method;
+            var url = req.url;
+            var statusCode;
+
+            console.log('Serving request type ' + method + ' for url ' + url);
+
+            if (method === 'GET') {          
+              req.on('error', function(err) {
+                console.error(err);
+              });
+              req.on('data', function(chunk) {
+                //do stuff
+              });
+              req.on('end', function() {
+                res.writeHead(200, {'Content-Type': 'application/JSON'});
+
+                var responseBody = {
+                  headers: headers,
+                  method: method,
+                  url: url,
+                  body: data.toString()
+                };
+                res.end(JSON.stringify({results: responseBody.body}));
+              });
+            }     
+          });
+        });
+
+      } else {
         req.on('error', function(err) {
           console.error(err);
         });
@@ -44,21 +102,11 @@ exports.handleRequest = function (req, res) {
           //do stuff
         });
         req.on('end', function() {
-          res.writeHead(statusCode, {'Content-Type': 'application/JSON'});
-
-          var responseBody = {
-            headers: headers,
-            method: method,
-            url: url,
-            body: data.toString()
-          };
-          console.log('hi therererererere');
-          console.log(JSON.stringify({results: responseBody.body}));
-          res.end(JSON.stringify({results: responseBody.body}));
+          res.writeHead(404);
+          res.end(JSON.stringify({}));
         });
-      }     
+      }
     });
-  });
-
-  // res.end(archive.paths.list);
+  }
 };
+ 
